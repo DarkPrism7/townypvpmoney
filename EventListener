@@ -1,0 +1,44 @@
+package me.darkprism;
+
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
+
+import com.palmergames.bukkit.towny.object.Resident;
+import com.palmergames.bukkit.towny.object.Town;
+import com.palmergames.bukkit.towny.object.TownyUniverse;
+import com.palmergames.bukkit.towny.object.WorldCoord;
+
+public class PlayerListener
+implements Listener
+{
+private TownyPvPMoney main;
+
+public PlayerListener(TownyPvPMoney main)
+{
+  this.main = main;
+}
+
+@EventHandler
+public void onDeath(PlayerDeathEvent e) {
+  if (e.getEntity().getKiller() == null) return; try
+  {
+    WorldCoord coord = WorldCoord.parseWorldCoord(e.getEntity());
+    if ((coord != null) && (coord.getTownBlock() != null) && (coord.getTownBlock().getTown() != null)) {
+      Town town = coord.getTownBlock().getTown();
+      if (town.hasResident(e.getEntity().getName())) {
+        Resident resident = TownyUniverse.getDataSource().getResident(e.getEntity().getKiller().getName());
+        if (resident.getTown() != null) {
+          double take = this.main.getMoneyPerKill();
+          if (town.getHoldingBalance() < this.main.getMoneyPerKill()) take = town.getHoldingBalance();
+
+          town.withdrawFromBank(TownyUniverse.getDataSource().getResident(e.getEntity().getName()), (int)take);
+          this.main.getEconomy().depositPlayer(e.getEntity().getKiller(), take);
+        }
+      }
+    }
+  } catch (Exception ex) {
+    ex.printStackTrace();
+  }
+}
+}
